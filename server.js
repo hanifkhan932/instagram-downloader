@@ -21,15 +21,24 @@ app.post('/download', async (req, res) => {
   const filename = `audio_${Date.now()}.mp3`;
   const outputPath = path.join(__dirname, 'downloads', filename);
 
-  const command = `yt-dlp -x --audio-format mp3 -o "${outputPath}" "${url}"`;
+  const command = `python3.11 -m yt_dlp -x --audio-format mp3 --no-check-certificates -o "${outputPath}" "${url}"`;
 
-  exec(command, (error, stdout, stderr) => {
+  console.log('Command chal raha hai:', command);
+
+  exec(command, { timeout: 60000 }, (error, stdout, stderr) => {
     if (error) {
       console.error('Error:', stderr);
       return res.status(500).json({ error: 'Audio download nahi ho saka. URL check karein.' });
     }
 
+    console.log('Success:', stdout);
+
+    if (!fs.existsSync(outputPath)) {
+      return res.status(500).json({ error: 'File nahi bani, dobara try karein.' });
+    }
+
     res.download(outputPath, 'instagram_audio.mp3', (err) => {
+      if (err) console.error('Download error:', err);
       if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
     });
   });
