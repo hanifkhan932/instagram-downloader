@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instagram Audio Downloader</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f5f0ff, #fff0f5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 4px 40px rgba(131,58,180,0.10);
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #1a1a2e;
+      margin-bottom: 0.4rem;
+      text-align: center;
+    }
+    .sub {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 2rem;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    input[type="url"] {
+      flex: 1;
+      padding: 13px 16px;
+      border: 1.5px solid #e8e0f5;
+      border-radius: 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    input[type="url"]:focus { border-color: #833ab4; }
+    .btn-main {
+      padding: 13px 22px;
+      background: linear-gradient(135deg, #833ab4, #fd1d1d);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-main:hover { opacity: 0.88; }
+    .btn-paste {
+      width: 100%;
+      padding: 11px;
+      background: #faf8ff;
+      border: 1.5px dashed #c9b8ee;
+      border-radius: 10px;
+      color: #833ab4;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+    .msg {
+      text-align: center;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-top: 1rem;
+      display: none;
+    }
+    .msg.show { display: block; }
+    .msg.loading { background: #f0ebff; color: #833ab4; }
+    .msg.error { background: #fff0f0; color: #c0392b; }
+    .msg.success { background: #f0fff5; color: #1a7a4a; }
+    .steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .step {
+      text-align: center;
+      flex: 1;
+    }
+    .step-num {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #833ab4, #fd1d1d);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 6px;
+    }
+    .step p { font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Instagram Audio Downloader</h1>
+    <p class="sub">Reels aur Posts se MP3 download karein — bilkul free</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>Link copy karein</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>Yahan paste karein</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>Download karein</p>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <input type="url" id="urlInput" placeholder="https://www.instagram.com/reel/..." />
+      <button class="btn-main" onclick="downloadAudio()">Download</button>
+    </div>
+
+    <button class="btn-paste" onclick="pasteUrl()">📋 Clipboard se Paste karein</button>
+
+    <div class="msg loading" id="msgLoading">⏳ Audio extract ho raha hai, thoda wait karein...</div>
+    <div class="msg error" id="msgError"></div>
+    <div class="msg success" id="msgSuccess">✅ Download shuru ho gaya! Files mein check karein.</div>
+  </div>
+
+  <script>
+    async function pasteUrl() {
+      try {
+        const text = await navigator.clipboard.readText();
+        document.getElementById('urlInput').value = text;
+      } catch(e) {
+        document.getElementById('urlInput').focus();
+      }
+    }
+
+    function showMsg(type, text) {
+      ['msgLoading','msgError','msgSuccess'].forEach(id => {
+        document.getElementById(id).classList.remove('show');
+      });
+      if (type === 'error') {
+        const el = document.getElementById('msgError');
+        el.textContent = text;
+        el.classList.add('show');
+      } else {
+        document.getElementById('msg' + type.charAt(0).toUpperCase() + type.slice(1)).classList.add('show');
+      }
+    }
+
+    async function downloadAudio() {
+      const url = document.getElementById('urlInput').value.trim();
+
+      if (!url) { showMsg('error', 'Pehle Instagram link paste karein'); return; }
+      if (!url.includes('instagram.com')) { showMsg('error', 'Yeh Instagram link nahi hai'); return; }
+
+      showMsg('loading');
+
+      try {
+        const response = await fetch('/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          showMsg('error', data.error || 'Kuch masla hua, dobara try karein');
+          return;
+        }
+
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'instagram_audio.mp3';
+        link.click();
+
+        showMsg('success');
+
+      } catch(err) {
+        showMsg('error', 'Server se connect nahi ho saka. Server chalu hai?');
+      }
+    }
+  </script>
+</body>
+</html>
