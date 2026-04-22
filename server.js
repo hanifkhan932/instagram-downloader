@@ -21,7 +21,7 @@ app.post('/download', async (req, res) => {
   const filename = `audio_${Date.now()}.mp3`;
   const outputPath = path.join(__dirname, 'downloads', filename);
 
-  const command = `python3.11 -m yt_dlp -x --audio-format mp3 --no-check-certificates -o "${outputPath}" "${url}"`;
+  const command = `yt-dlp -x --audio-format mp3 --no-check-certificates -o "${outputPath}" "${url}"`;
 
   console.log('Command chal raha hai:', command);
 
