@@ -11,6 +11,20 @@ app.use(express.static('public'));
 
 if (!fs.existsSync('downloads')) fs.mkdirSync('downloads');
 
+// yt-dlp path dhundho
+function getYtDlpPath() {
+  const paths = [
+    '/usr/local/bin/yt-dlp',
+    '/usr/bin/yt-dlp',
+    '/root/.local/bin/yt-dlp',
+    'yt-dlp'
+  ];
+  for (const p of paths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return 'yt-dlp';
+}
+
 app.post('/download', async (req, res) => {
   const { url } = req.body;
 
@@ -20,8 +34,11 @@ app.post('/download', async (req, res) => {
 
   const filename = `audio_${Date.now()}.mp3`;
   const outputPath = path.join(__dirname, 'downloads', filename);
+  const ytdlp = getYtDlpPath();
 
-  const command = `yt-dlp -x --audio-format mp3 --no-check-certificates -o "${outputPath}" "${url}"`;
+  console.log('yt-dlp path:', ytdlp);
+
+  const command = `${ytdlp} -x --audio-format mp3 --no-check-certificates -o "${outputPath}" "${url}"`;
 
   console.log('Command:', command);
 
